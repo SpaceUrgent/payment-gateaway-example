@@ -1,0 +1,1 @@
+2022-06-18 00:32:12,912 INFO org.sample.payment.gateway.logger.LoggerHelper [http-nio-8080-exec-2] PaymentResponse(invoice=1234567, amount=1200.0, currency=USD, cardholder=CardholderResponse(name=***** ****, email=email@domain.com), card=CardResponse(pan=************3860, expiry=****))
