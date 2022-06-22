@@ -15,13 +15,11 @@ import java.math.BigDecimal;
 
 @NoArgsConstructor
 @AllArgsConstructor
-
 @Getter @Setter
 @Component
 @Builder
 @ToString
 @JsonIgnoreProperties(ignoreUnknown = true)
-
 public class Payment {
 
     @JsonProperty("invoice")

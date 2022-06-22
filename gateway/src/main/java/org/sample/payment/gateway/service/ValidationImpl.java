@@ -2,15 +2,12 @@ package org.sample.payment.gateway.service;
 
 import org.apache.commons.validator.routines.checkdigit.LuhnCheckDigit;
 
-import org.sample.payment.gateway.exception.CustomValidationException;
+
 import org.sample.payment.gateway.model.Card;
 import org.sample.payment.gateway.model.Cardholder;
 import org.sample.payment.gateway.model.Payment;
-import org.sample.payment.gateway.repository.PaymentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import javax.xml.bind.ValidationException;
 
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -21,9 +18,6 @@ import static org.sample.payment.gateway.constants.Constant.*;
 @Service
 public class ValidationImpl implements Validation{
 
-//    private ValidationImpl validation;
-
-
     public PaymentRecordService paymentRecordService;
 
     @Autowired
@@ -31,201 +25,178 @@ public class ValidationImpl implements Validation{
         this.paymentRecordService = paymentRecordService;
     }
 
-    private Map<String, String> errors;
 
     @Override
-    public Map<String, String> validatePayment(Payment payment) throws CustomValidationException {
-        errors = new HashMap<>();
-        try {
-            validateInvoiceField(payment.getInvoice());
-        } catch (CustomValidationException exception) {
-            String invalidField = "invoice:";
-            String error = exception.getMessage();
-            errors.put(invalidField, error);
-        }
-        validateAmount(payment.getAmount());
-        validateCurrencyField(payment.getCurrency());
-        try {
-            validateCardholder(payment.getCardholder());
-        } catch (CustomValidationException e){
-            errors.put("cardholder:", e.getMessage());
-        }
-        try {
-            validateCard(payment.getCard());
-        } catch (CustomValidationException e){
-            errors.put("card:", e.getMessage());
-        }
+    public Map<String, String> validatePayment(Payment payment){
+        Map<String, String> errors = new HashMap<>();
+
+        errors = validateInvoiceField(payment.getInvoice(), errors);
+        errors = validateAmount(payment.getAmount(), errors);
+        errors = validateCurrencyField(payment.getCurrency(), errors);
+        errors = validateCardholder(payment.getCardholder(), errors);
+        errors = validateCard(payment.getCard(), errors);
+
         return errors;
     }
 
 
-    public void validateInvoiceField(String invoice) throws CustomValidationException {
-        if (invoice.isEmpty()) throw new CustomValidationException("Invoice is required");
-        if (checkPaymentsWithSameInvoice(invoice) == true)
-            throw new CustomValidationException("Payment with same invoice exists. Multiple payments with same invoice can not be registered");
+    public Map<String, String> validateInvoiceField(String invoice, Map<String, String> errors){
+        if (invoice.isEmpty()) errors.put(ERROR_KEY_INVOICE, "Invoice is required");
+        if (checkPaymentsWithSameInvoice(invoice) == true) errors.put(ERROR_KEY_INVOICE, "Payment with same invoice exists. Multiple payments with same invoice can not be registered");
+        return errors;
     }
 
     private boolean checkPaymentsWithSameInvoice(String invoice) {
         return paymentRecordService.checkIfInvoiceExists(invoice);
     }
 
-    public void validateAmount(double amount) throws CustomValidationException{
-        try {
-            validateAmountNotZero(amount);
-        } catch (CustomValidationException e){
-            errors.put("amount:", e.getMessage());
-        }
-        try {
-            validateAmountNotNegative(amount);
-        } catch (CustomValidationException e){
-            errors.put("amount:", e.getMessage());
-        }
+    public Map<String, String> validateAmount(double amount, Map<String, String> errors){
+        errors = validateAmountNotZero(amount, errors);
+        errors = validateAmountNotNegative(amount, errors);
+        return errors;
     }
 
-    public void validateAmountNotZero(double amount) throws CustomValidationException{
-        if (amount == 0) throw new CustomValidationException("Amount is required");
+    public Map<String, String> validateAmountNotZero(double amount, Map<String, String> errors){
+        if (amount == 0) errors.put(ERROR_KEY_AMOUNT, "Amount is required");
+        return errors;
     }
 
-    public void validateAmountNotNegative(double amount) throws CustomValidationException{
-        if (amount < 0) throw new CustomValidationException("Amount is negative");
+    public Map<String, String> validateAmountNotNegative(double amount, Map<String, String> errors){
+        if (amount < 0) errors.put(ERROR_KEY_AMOUNT, "Amount is negative");
+        return errors;
     }
-    public void validateCurrencyField(String currency) throws CustomValidationException {
-        try {
-            validateCurrencyFieldNotEmpty(currency);
-        } catch (CustomValidationException e){
-            errors.put("currency:", e.getMessage());
-        }
-        try {
-            validateCurrencyFieldFormat(currency);
-        } catch (CustomValidationException e){
-            errors.put("currency:", e.getMessage());
-        }
-
+    public Map<String, String> validateCurrencyField(String currency, Map<String, String> errors){
+        errors = validateCurrencyFieldNotEmpty(currency, errors);
+        if(!errors.containsKey(ERROR_KEY_CURRENCY)) errors = validateCurrencyFieldFormat(currency, errors);
+        return errors;
     }
-    public void validateCurrencyFieldNotEmpty(String currency) throws CustomValidationException {
-        if (currency.isEmpty()) throw new CustomValidationException("Currency is required");
+    public Map<String, String> validateCurrencyFieldNotEmpty(String currency, Map<String, String> errors){
+        if (currency.isEmpty()) errors.put(ERROR_KEY_CURRENCY, "Currency is required");
+        return errors;
     }
 
-    public void validateCurrencyFieldFormat(String currency) throws CustomValidationException {
-        if (!currency.matches(CURRENCY_REGEX)) throw new CustomValidationException("Invalid currency format");
+    public Map<String, String> validateCurrencyFieldFormat(String currency, Map<String, String> errors){
+        if (!currency.matches(CURRENCY_REGEX)) errors.put(ERROR_KEY_CURRENCY, "Invalid currency format");
+        return errors;
     }
 
-    public void validateCardholder(Cardholder cardholder) throws CustomValidationException {
+    public Map<String, String> validateCardholder(Cardholder cardholder, Map<String, String> errors){
         if (cardholder == null) {
-            throw new CustomValidationException("Cardholder is required");
+            errors.put(ERROR_KEY_CARDHOLDER, "Cardholder is required");
         } else {
-            validateCardholderName(cardholder.getName());
-            validateCardholderEmail(cardholder.getEmail());
+            errors = validateCardholderName(cardholder.getName(), errors);
+            errors = validateCardholderEmail(cardholder.getEmail(), errors);
         }
+        return errors;
     }
 
-    public void validateCardholderName(String name) throws CustomValidationException {
-        try {
-            validateCardholderNameNotEmpty(name);
-            validateCardholderNameFormat(name);
-        } catch (CustomValidationException e){
-            errors.put("name:",e.getMessage());
-        }
+    public Map<String, String> validateCardholderName(String name, Map<String, String> errors){
+        errors = validateCardholderNameNotEmpty(name, errors);
+        if(!errors.containsKey(ERROR_KEY_NAME)){ errors = validateCardholderNameFormat(name, errors);}
+        return errors;
     }
 
-    public void validateCardholderNameNotEmpty(String name) throws CustomValidationException {
-        if (name.isEmpty()) throw new CustomValidationException("Cardholder name is required");
+    public Map<String, String> validateCardholderNameNotEmpty(String name, Map<String, String> errors){
+        if (name.isEmpty()) errors.put(ERROR_KEY_NAME, "Cardholder name is required");
+        return errors;
     }
 
-    public void validateCardholderNameFormat(String name) throws CustomValidationException {
-        if (!name.matches(CARDHOLDER_NAME_REGEX)) throw new CustomValidationException("Invalid cardholder name format");
+    public Map<String, String> validateCardholderNameFormat(String name, Map<String, String> errors){
+        if (!name.matches(CARDHOLDER_NAME_REGEX)) errors.put(ERROR_KEY_NAME, "Invalid cardholder name format");
+        return errors;
     }
-    public void validateCardholderEmail(String email) throws CustomValidationException {
-        try {
-            validateCardholderEmailNotEmpty(email);
-            validateCardholderEmailFormat(email);
-        } catch (CustomValidationException e){
-            errors.put("email:", e.getMessage());
-        }
+    public Map<String, String> validateCardholderEmail(String email, Map<String, String> errors){
+        errors = validateCardholderEmailNotEmpty(email, errors);
+        if(!errors.containsKey(ERROR_KEY_EMAIL)) errors = validateCardholderEmailFormat(email, errors);
+        return errors;
     }
 
-    public void validateCardholderEmailNotEmpty(String email) throws CustomValidationException {
-        if (email.isEmpty()) throw new CustomValidationException("Email is required");
+    public Map<String, String> validateCardholderEmailNotEmpty(String email, Map<String, String> errors){
+        if (email.isEmpty()) errors.put(ERROR_KEY_EMAIL, "Email is required");
+        return errors;
     }
-    public void validateCardholderEmailFormat(String email) throws CustomValidationException {
-        if (!email.matches(EMAIL_REGEX)) throw new CustomValidationException("Invalid cardholder email format");
+    public Map<String, String> validateCardholderEmailFormat(String email, Map<String, String> errors){
+        if (!email.matches(EMAIL_REGEX)) errors.put(ERROR_KEY_EMAIL, "Invalid cardholder email format");
+        return errors;
     }
 
-    private void validateCard(Card card) throws CustomValidationException {
+    public Map<String, String> validateCard(Card card, Map<String, String> errors){
         if (card == null) {
-            throw new CustomValidationException("Card is required");
+            errors.put(ERROR_KEY_CARD, "Card is required");
         } else {
-            validateCardPan(card.getPan());
-            validateCardExpiry(card.getExpiry());
-            validateCardCvv(card.getCvv());
+            errors = validateCardPan(card.getPan(), errors);
+            errors = validateCardExpiry(card.getExpiry(), errors);
+            errors = validateCardCvv(card.getCvv(), errors);
         }
 
+        return errors;
     }
 
-    public void validateCardPan(String pan) throws CustomValidationException {
-        try {
-            validateCardPanNotEmpty(pan);
-            validateCardPanFormat(pan);
-            luhnCheck(pan);
-        } catch (CustomValidationException e){
-            errors.put("pan:", e.getMessage());
-        }
+    public Map<String, String> validateCardPan(String pan, Map<String, String> errors){
+        errors = validateCardPanNotEmpty(pan, errors);
+        if(!errors.containsKey(ERROR_KEY_PAN)){ errors = validateCardPanFormat(pan, errors);}
+        if (!errors.containsKey(ERROR_KEY_PAN)){ errors = luhnCheck(pan, errors);}
+        return errors;
     }
 
-    public void validateCardPanNotEmpty(String pan) throws CustomValidationException {
-        if (pan.isEmpty()) throw new CustomValidationException("Pan is required");
+    public Map<String, String> validateCardPanNotEmpty(String pan, Map<String, String> errors){
+        if (pan.isEmpty()) errors.put(ERROR_KEY_PAN, "Pan is required");
+        return errors;
     }
-    public void validateCardPanFormat(String pan) throws CustomValidationException {
-
-        if (!pan.matches(PAN_REGEX)) throw new CustomValidationException("Invalid card pan format");
-
-    }
-
-    public void luhnCheck(String pan) throws CustomValidationException {
-       if (!LuhnCheckDigit.LUHN_CHECK_DIGIT.isValid(pan)) throw new CustomValidationException("Invalid pan number");
+    public Map<String, String> validateCardPanFormat(String pan, Map<String, String> errors){
+        if (!pan.matches(PAN_REGEX)) errors.put(ERROR_KEY_PAN, "Invalid card pan format");
+        return errors;
     }
 
-    public void validateCardExpiry(String expiry) throws CustomValidationException {
-        try {
-            validateCardExpiryNotEmpty(expiry);
-            validateCardExpiryFormat(expiry);
-            checkExpiryOverdue(expiry);
-        } catch (CustomValidationException e){
-            errors.put("expiry:", e.getMessage());
-        }
+    public Map<String, String> luhnCheck(String pan, Map<String, String> errors){
+       if (!LuhnCheckDigit.LUHN_CHECK_DIGIT.isValid(pan)) errors.put(ERROR_KEY_PAN, "Invalid pan number");
+       return errors;
     }
 
-    public void validateCardExpiryNotEmpty(String expiry) throws CustomValidationException {
-        if (expiry.isEmpty()) throw new CustomValidationException("Expiry is required");
+    public Map<String, String> validateCardExpiry(String expiry, Map<String, String> errors){
+        errors = validateCardExpiryNotEmpty(expiry, errors);
+        if(!errors.containsKey(ERROR_KEY_CARD)){ errors = validateCardExpiryFormat(expiry, errors);}
+        if(!errors.containsKey(ERROR_KEY_CARD)){ errors = checkExpiryOverdue(expiry, errors);}
+
+        return errors;
     }
 
-    public void validateCardExpiryFormat(String expiry) throws CustomValidationException {
-        if (!expiry.matches(EXPIRY_REGEX)) throw new CustomValidationException("Invalid card expiry format");
+    public Map<String, String> validateCardExpiryNotEmpty(String expiry, Map<String, String> errors){
+        if (expiry.isEmpty()) errors.put(ERROR_KEY_EXPIRY, "Expiry is required");
+        return errors;
     }
 
-    public void checkExpiryOverdue(String expiry) throws CustomValidationException {
+    public Map<String, String> validateCardExpiryFormat(String expiry, Map<String, String> errors){
+        if (!expiry.matches(EXPIRY_REGEX)) errors.put(ERROR_KEY_EXPIRY, "Invalid card expiry format");
+        return errors;
+    }
+
+    public Map<String, String> checkExpiryOverdue(String expiry, Map<String, String> errors){
         int month = Integer.parseInt(expiry.substring(0, 2));
         int year = Integer.parseInt("20" + expiry.substring(2, 4));
         LocalDate expiryDate = LocalDate.of(year, month, 1);
         LocalDate currentDate = LocalDate.now();
 
-        if (expiryDate.isBefore(currentDate)) throw new CustomValidationException("Card is expired");
+        if (expiryDate.isBefore(currentDate)) errors.put(ERROR_KEY_EXPIRY, "Card is expired");
+        return errors;
     }
 
-    public void validateCardCvv(String cvv) throws CustomValidationException {
-        try {
-            validateCardCvvNotEmpty(cvv);
-            validateCardCvvFormat(cvv);
-        } catch (CustomValidationException e){
-            errors.put("cvv:", e.getMessage());
+    public Map<String, String> validateCardCvv(String cvv, Map<String, String> errors){
+
+        errors = validateCardCvvNotEmpty(cvv, errors);
+        if(!errors.containsKey(ERROR_KEY_CVV)) {
+            errors = validateCardCvvFormat(cvv, errors);
         }
+        return errors;
     }
 
-    public void validateCardCvvNotEmpty(String cvv) throws CustomValidationException {
-        if (cvv.isEmpty()) throw new CustomValidationException("CVV is required");
+    public Map<String, String> validateCardCvvNotEmpty(String cvv, Map<String, String> errors){
+        if (cvv.isEmpty()) errors.put(ERROR_KEY_CVV, "CVV is required");
+        return errors;
     }
-    public void validateCardCvvFormat(String cvv) throws CustomValidationException {
-        if (!cvv.matches(CVV_REGEX)) throw new CustomValidationException("Invalid card cvv format");
+    public Map<String, String> validateCardCvvFormat(String cvv, Map<String, String> errors){
+        if (!cvv.matches(CVV_REGEX)) errors.put(ERROR_KEY_CVV, "Invalid card cvv format");
+        return errors;
     }
 
 

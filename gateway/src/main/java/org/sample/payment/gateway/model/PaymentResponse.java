@@ -2,17 +2,16 @@ package org.sample.payment.gateway.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.sun.istack.NotNull;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 import javax.persistence.*;
 
 @NoArgsConstructor
+@AllArgsConstructor
 @Getter @Setter
 @JsonIgnoreProperties
 @ToString
+@Builder
 public class PaymentResponse {
 
     @NotNull

@@ -21,6 +21,7 @@ public class CardRecord {
     @Column(name = "pan", unique = true)
     @Id
     private String pan;
+
     @Column(name = "expiry")
     private String expiry;
 

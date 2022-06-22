@@ -5,16 +5,15 @@ import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.Optional;
 
 @Service
-public class PaymentDTOImpl implements PaymentDTO {
+public class PaymentTransformationImpl implements PaymentTransformation {
 
     @Override
-    public PaymentRecord transposeFromPaymentToPaymentRecord(Payment payment) {
+    public PaymentRecord transformFromPaymentToPaymentRecord(Payment payment) {
 
-        CardholderRecord cardholderRecord = transposeToCardholderRecord(payment.getCardholder());
-        CardRecord cardRecord = transposeToCardRecord(payment.getCard());
+        CardholderRecord cardholderRecord = transformToCardholderRecord(payment.getCardholder());
+        CardRecord cardRecord = transformCardToCardRecord(payment.getCard());
 
         PaymentRecord paymentRecord = new PaymentRecord();
 
@@ -28,14 +27,14 @@ public class PaymentDTOImpl implements PaymentDTO {
     }
 
 
-    private CardRecord transposeToCardRecord(Card card) {
+    private CardRecord transformCardToCardRecord(Card card) {
         CardRecord cardRecord = new CardRecord();
         cardRecord.setPan(encodeValue(card.getPan()));
         cardRecord.setExpiry(encodeValue(card.getExpiry()));
         return cardRecord;
     }
 
-    private CardholderRecord transposeToCardholderRecord(Cardholder cardholder) {
+    private CardholderRecord transformToCardholderRecord(Cardholder cardholder) {
         CardholderRecord cardholderRecord = new CardholderRecord();
         cardholderRecord.setName(encodeValue(cardholder.getName()));
         cardholderRecord.setName(cardholder.getName());
@@ -43,9 +42,9 @@ public class PaymentDTOImpl implements PaymentDTO {
         return cardholderRecord;
     }
 
-    public PaymentResponse transposePaymentRecordToResponse(PaymentRecord  paymentRecord){
-        CardholderResponse cardholderResponse = transposeCardholderRecordToResponse(paymentRecord.getCardholderRecord());
-        CardResponse cardResponse = transposeCardRecordToResponse(paymentRecord.getCard());
+    public PaymentResponse transformPaymentRecordToResponse(PaymentRecord  paymentRecord){
+        CardholderResponse cardholderResponse = transformCardholderRecordToResponse(paymentRecord.getCardholderRecord());
+        CardResponse cardResponse = transfromCardRecordToResponse(paymentRecord.getCard());
         PaymentResponse paymentResponse = new PaymentResponse();
 
         paymentResponse.setInvoice(paymentRecord.getInvoice());
@@ -58,7 +57,7 @@ public class PaymentDTOImpl implements PaymentDTO {
     }
 
 
-    private CardholderResponse transposeCardholderRecordToResponse(CardholderRecord cardholderRecord) {
+    private CardholderResponse transformCardholderRecordToResponse(CardholderRecord cardholderRecord) {
         CardholderResponse cardholderResponse = new CardholderResponse();
         cardholderResponse.setName(maskCardholderName(cardholderRecord.getName()));
         cardholderResponse.setEmail(cardholderRecord.getEmail());
@@ -69,7 +68,7 @@ public class PaymentDTOImpl implements PaymentDTO {
         return name.replaceAll("[A-Za-z]", "*");
     }
 
-    private CardResponse transposeCardRecordToResponse(CardRecord cardRecord) {
+    private CardResponse transfromCardRecordToResponse(CardRecord cardRecord) {
         CardResponse cardResponse = new CardResponse();
         String decryptedPan = decodeValue(cardRecord.getPan());
         cardResponse.setPan(maskPan(decryptedPan));
@@ -79,9 +78,9 @@ public class PaymentDTOImpl implements PaymentDTO {
         return cardResponse;
     }
 
-    public PaymentResponse transposePaymentToPaymentResponse(Payment payment){
-        CardholderResponse cardholderResponse = transposeToCardholderResponse(payment.getCardholder());
-        CardResponse cardResponse = transposeCardToCardResponse(payment.getCard());
+    public PaymentResponse transformPaymentToPaymentResponse(Payment payment){
+        CardholderResponse cardholderResponse = transformToCardholderResponse(payment.getCardholder());
+        CardResponse cardResponse = transformCardToCardResponse(payment.getCard());
         PaymentResponse paymentResponse = new PaymentResponse();
         paymentResponse.setInvoice(payment.getInvoice());
         paymentResponse.setAmount(payment.getAmount());
@@ -92,14 +91,14 @@ public class PaymentDTOImpl implements PaymentDTO {
         return paymentResponse;
     }
 
-    public CardholderResponse transposeToCardholderResponse(Cardholder cardholder) {
+    public CardholderResponse transformToCardholderResponse(Cardholder cardholder) {
         CardholderResponse cardholderResponse = new CardholderResponse();
         cardholderResponse.setName(maskCardholderName(cardholder.getName()));
         cardholderResponse.setEmail(cardholder.getEmail());
         return cardholderResponse;
     }
 
-    public CardResponse transposeCardToCardResponse(Card card){
+    public CardResponse transformCardToCardResponse(Card card){
         CardResponse cardResponse = new CardResponse();
         cardResponse.setPan(maskPan(card.getPan()));
         cardResponse.setExpiry(maskExpiry(card.getExpiry()));

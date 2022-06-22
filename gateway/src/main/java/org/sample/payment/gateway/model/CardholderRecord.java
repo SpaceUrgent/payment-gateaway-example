@@ -23,13 +23,4 @@ public class CardholderRecord {
     @OneToMany
     private List<PaymentRecord> paymentRecords = new ArrayList<>();
 
-//    public void addPaymentRecord(PaymentRecord paymentRecord){
-//        paymentRecords.add(paymentRecord);
-//        paymentRecord.setCardholderRecord(this);
-//    }
-//
-//    public void removePaymentRecord(PaymentRecord paymentRecord){
-//        paymentRecords.remove(paymentRecord);
-//        paymentRecord.setCardholderRecord(null);
-//    }
 }

@@ -8,4 +8,15 @@ public class Constant {
     public static final String EXPIRY_REGEX = "[0-9]{4}";
     public static final String CVV_REGEX = "[0-9]{3}";
 
+    public static final String ERROR_KEY_INVOICE = "invoice:";
+    public static final String ERROR_KEY_AMOUNT = "amount:";
+    public static final String ERROR_KEY_CURRENCY = "currency:";
+    public static final String ERROR_KEY_CARDHOLDER = "cardholder:";
+    public static final String ERROR_KEY_NAME = "name:";
+    public static final String ERROR_KEY_EMAIL = "email:";
+    public static final String ERROR_KEY_CARD = "card:";
+    public static final String ERROR_KEY_PAN = "pan:";
+    public static final String ERROR_KEY_EXPIRY = "expiry:";
+    public static final String ERROR_KEY_CVV = "cvv:";
+
 }

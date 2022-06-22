@@ -2,13 +2,13 @@ package org.sample.payment.gateway;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.sample.payment.gateway.service.PaymentDTOImpl;
+import org.sample.payment.gateway.service.PaymentTransformationImpl;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-public class PaymentDTOTest {
+public class PaymentTransformationTest {
 
-    PaymentDTOImpl paymentDTO = new PaymentDTOImpl();
+    PaymentTransformationImpl paymentDTO = new PaymentTransformationImpl();
 
     @Test
     public void maskCardExpiryTest(){

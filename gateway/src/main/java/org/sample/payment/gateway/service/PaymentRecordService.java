@@ -24,13 +24,11 @@ public class PaymentRecordService {
 
 
     public void savePaymentRecord(PaymentRecord paymentRecord){
-
         paymentRepository.save(paymentRecord);
 
     }
 
     public PaymentRecord getPayment(String invoice){
-
         Optional<PaymentRecord> paymentRecordOptional = paymentRepository.findById(invoice);
         return paymentRecordOptional.get();
     }

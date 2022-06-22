@@ -1,34 +1,36 @@
 package org.sample.payment.gateway;
 
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.sample.payment.gateway.exception.CustomValidationException;
+
 import org.sample.payment.gateway.model.*;
 import org.sample.payment.gateway.service.ValidationImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.stereotype.Controller;
 
-import javax.xml.bind.ValidationException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import static org.sample.payment.gateway.constants.Constant.*;
 
 @SpringBootTest
+@Controller
 public class ValidationTest {
 
     @Autowired
-    private static ValidationImpl validation;
+    private ValidationImpl validation;
 
-    private static List<Payment> payments;
+    private static List<Payment> payments = new ArrayList<>();
 
     @BeforeAll
     public static void setup(){
-//         validation = new ValidationImpl();
-         payments = new ArrayList<>();
 
-         Card validCard = Card.builder()
+
+        Card validCard = Card.builder()
                 .pan("4200000000000001")
                 .expiry("0624")
                 .cvv("789")
@@ -54,241 +56,405 @@ public class ValidationTest {
     }
 
     @Test
-    public void emptyInvoiceThrowException() throws ValidationException {
+    public void emptyInvoicePutsError(){
         String invoice = "";
+        Map<String, String> errors = new HashMap<>();
 
-        Exception exception = Assertions.assertThrows(CustomValidationException.class, () -> validation.validateInvoiceField(invoice));
-        Assertions.assertEquals("Invoice is required", exception.getMessage());
+            errors = validation.validateInvoiceField(invoice, errors);
+
+            boolean containsKey = errors.containsKey(ERROR_KEY_INVOICE);
+            String errorValue = errors.get(ERROR_KEY_INVOICE);
+
+        Assertions.assertTrue(containsKey);
+        Assertions.assertEquals("Invoice is required", errorValue);
     }
+
+//    @Test
+//    public void checkPaymentWithExistingInvoicePutError(){
+//    }
 
     @Test
     public void validPaymentInvoiceTest(){
         String invoice = "1234567";
 
-        Assertions.assertDoesNotThrow(() -> validation.validateInvoiceField(invoice));
+        Map<String, String> errors = new HashMap<>();
+
+        errors = validation.validateInvoiceField(invoice, errors);
+
+        boolean containsKey = errors.containsKey(ERROR_KEY_INVOICE);
+        String errorValue = errors.get(ERROR_KEY_INVOICE);
+
+        Assertions.assertFalse(containsKey);
+        Assertions.assertNull(errorValue);
     }
 
     @Test
-    public void validatePaymentAmountTest(){
-
-        Assertions.assertDoesNotThrow(() -> validation.validateAmount(payments.get(0).getAmount()));
-
-    }
-
-    @Test
-    public void validateZeroPaymentAmountThrowsException(){
+    public void zeroAmountValidationPutsError(){
         double amount = 0;
-        Exception exception = Assertions.assertThrows(CustomValidationException.class,
-                () -> validation.validateAmountNotZero(amount));
-        Assertions.assertEquals("Amount is required", exception.getMessage());
+        Map<String, String> errors = new HashMap<>();
+
+        errors = validation.validateAmount(amount, errors);
+
+        boolean containsKey = errors.containsKey(ERROR_KEY_AMOUNT);
+        String errorValue = errors.get(ERROR_KEY_AMOUNT);
+
+        Assertions.assertTrue(containsKey);
+        Assertions.assertEquals("Amount is required" ,errorValue);
     }
 
     @Test
-    public void validateNegativePaymentAmountThrowsException(){
+    public void negativeAmountValidationPutsError(){
         double amount = -100;
-        Exception exception = Assertions.assertThrows(CustomValidationException.class,
-                () -> validation.validateAmountNotNegative(amount));
+        Map<String, String> errors = new HashMap<>();
 
-        Assertions.assertEquals("Amount is negative", exception.getMessage());
+        errors = validation.validateAmount(amount, errors);
+
+        boolean containsKey = errors.containsKey(ERROR_KEY_AMOUNT);
+        String errorValue = errors.get(ERROR_KEY_AMOUNT);
+
+        Assertions.assertTrue(containsKey);
+        Assertions.assertEquals("Amount is negative" ,errorValue);
     }
 
     @Test
-    public void validateCorrectPaymentCurrencyTest(){
-        String currency = "USD";
-        Assertions.assertDoesNotThrow(() -> validation.validateCurrencyField(currency));
+    public void validAmountValidationTest(){
+        double amount = 100;
+        Map<String, String> errors = new HashMap<>();
+
+        errors = validation.validateAmount(amount, errors);
+
+        boolean containsKey = errors.containsKey(ERROR_KEY_AMOUNT);
+        String errorValue = errors.get(ERROR_KEY_AMOUNT);
+
+        Assertions.assertFalse(containsKey);
+        Assertions.assertNull(errorValue);
     }
 
     @Test
-    public void validateEmptyPaymentCurrencyTest(){
+    public void emptyCurrencyValidationPutsError(){
         String currency = "";
-        Exception exception = Assertions.assertThrows(CustomValidationException.class,
-                () -> validation.validateCurrencyFieldNotEmpty(currency));
-        Assertions.assertEquals("Currency is required", exception.getMessage());
+
+        Map<String, String> errors = new HashMap<>();
+
+        errors = validation.validateCurrencyField(currency, errors);
+
+        boolean containsKey = errors.containsKey(ERROR_KEY_CURRENCY);
+        String errorValue = errors.get(ERROR_KEY_CURRENCY);
+
+        Assertions.assertTrue(containsKey);
+        Assertions.assertEquals("Currency is required", errorValue);
     }
 
     @Test
-    public void validateIncorrectFormatPaymentCurrencyTest(){
-        String currency1 = "123";
-        String currency2 = "sss";
+    public void invalidCurrencyFormatValidationPutsError(){
+        String currency = "111";
 
-        Exception exception1 = Assertions.assertThrows(CustomValidationException.class,
-                () -> validation.validateCurrencyFieldFormat(currency1));
-        Exception exception2 = Assertions.assertThrows(CustomValidationException.class,
-                () -> validation.validateCurrencyFieldFormat(currency2));
-        Assertions.assertEquals("Invalid currency format", exception1.getMessage());
-        Assertions.assertEquals("Invalid currency format", exception2.getMessage());
+        Map<String, String> errors = new HashMap<>();
 
+        errors = validation.validateCurrencyField(currency, errors);
+
+        boolean containsKey = errors.containsKey(ERROR_KEY_CURRENCY);
+        String errorValue = errors.get(ERROR_KEY_CURRENCY);
+
+        Assertions.assertTrue(containsKey);
+        Assertions.assertEquals("Invalid currency format", errorValue);
     }
 
     @Test
-    public void validateCorrectCardholderNameTest(){
-        String name = "Steve Carrell";
+    public void validCurrencyValidationTest(){
+        String currency = "USD";
 
-        Assertions.assertDoesNotThrow(() -> validation.validateCardholderName(name));
+        Map<String, String> errors = new HashMap<>();
 
+        errors = validation.validateCurrencyField(currency, errors);
+
+        boolean containsKey = errors.containsKey(ERROR_KEY_CURRENCY);
+        String errorValue = errors.get(ERROR_KEY_CURRENCY);
+
+        Assertions.assertFalse(containsKey);
+        Assertions.assertNull(errorValue);
     }
 
     @Test
-    public void validateEmptyCardholderNameTest(){
+    public void emptyCardholderNameValidationPutsError(){
         String name = "";
 
-        Exception exception = Assertions.assertThrows(CustomValidationException.class,
-                () -> validation.validateCardholderNameNotEmpty(name));
-        Assertions.assertEquals("Cardholder name is required", exception.getMessage());
+        Map<String, String> errors = new HashMap<>();
 
+        errors = validation.validateCardholderName(name, errors);
+
+        boolean containsKey = errors.containsKey(ERROR_KEY_NAME);
+        String errorValue = errors.get(ERROR_KEY_NAME);
+
+        Assertions.assertTrue(containsKey);
+        Assertions.assertEquals("Cardholder name is required", errorValue);
     }
 
     @Test
-    public void validateIncorrectFormatCardholderNameTest(){
-        String name1 = "123";
-        String name2 = "!qwee -1";
+    public void invalidCardholderNameFormatValidationPutsError(){
+        String name1 = "1231134";
+        String name2 = "ASDfdsdsf";
+        String name3 = "asda! asd-a";
 
+        Map<String, String> errors1 = new HashMap<>();
+        Map<String, String> errors2 = new HashMap<>();
+        Map<String, String> errors3 = new HashMap<>();
 
-        Exception exception1 = Assertions.assertThrows(CustomValidationException.class,
-                () -> validation.validateCardholderNameFormat(name1));
-        Exception exception2 = Assertions.assertThrows(CustomValidationException.class,
-                () -> validation.validateCardholderNameFormat(name2));
+        errors1 = validation.validateCardholderName(name1, errors1);
+        errors2 = validation.validateCardholderName(name2, errors2);
+        errors3 = validation.validateCardholderName(name3, errors3);
 
-        Assertions.assertEquals("Invalid cardholder name format", exception1.getMessage());
-        Assertions.assertEquals("Invalid cardholder name format", exception2.getMessage());
+        boolean containsKey1 = errors1.containsKey(ERROR_KEY_NAME);
+        String errorValue1 = errors1.get(ERROR_KEY_NAME);
+        boolean containsKey2 = errors2.containsKey(ERROR_KEY_NAME);
+        String errorValue2 = errors2.get(ERROR_KEY_NAME);
+        boolean containsKey3 = errors3.containsKey(ERROR_KEY_NAME);
+        String errorValue3 = errors3.get(ERROR_KEY_NAME);
+
+        Assertions.assertTrue(containsKey1);
+        Assertions.assertTrue(containsKey2);
+        Assertions.assertTrue(containsKey3);
+        Assertions.assertEquals("Invalid cardholder name format", errorValue1);
+        Assertions.assertEquals("Invalid cardholder name format", errorValue2);
+        Assertions.assertEquals("Invalid cardholder name format", errorValue3);
     }
 
     @Test
-    public void validateCorrectCardholderEmailTest(){
-        String email = "email@domain.com";
+    public void validCardholderNameValidationTest(){
+        String name = "Steve Carrel";
 
-        Assertions.assertDoesNotThrow(() -> validation.validateCardholderEmailFormat(email));
+        Map<String, String> errors = new HashMap<>();
+
+        errors = validation.validateCurrencyField(name, errors);
+
+        boolean containsKey = errors.containsKey(ERROR_KEY_NAME);
+        String errorValue = errors.get(ERROR_KEY_NAME);
+
+        Assertions.assertFalse(containsKey);
+        Assertions.assertNull(errorValue);
     }
 
-
     @Test
-    public void validateEmptyCardholderEmailThrowsExceptionTest(){
+    public void emptyCardholderEmailValidationPutsError(){
         String email = "";
 
-        Exception exception = Assertions.assertThrows(CustomValidationException.class,
-                () -> validation.validateCardholderEmailNotEmpty(email));
+        Map<String, String> errors = new HashMap<>();
 
-        Assertions.assertEquals("Email is required", exception.getMessage());
+        errors = validation.validateCardholderEmail(email, errors);
+
+        boolean containsKey = errors.containsKey(ERROR_KEY_EMAIL);
+        String errorValue = errors.get(ERROR_KEY_EMAIL);
+
+        Assertions.assertTrue(containsKey);
+        Assertions.assertEquals("Email is required", errorValue);
     }
 
     @Test
-    public void validateIncorrectFormatCardholderEmailThrowsExceptionTest(){
-        String email1 = "12345";
-        String email2 = "@asdafs1213";
-        String email3 = "QWERTY";
+    public void invalidCardholderEmailFormatValidationPutsError(){
+        String email1 = "@qweqweasd";
+        String email2 = "asdasd1231";
+        String email3 = "qw!!!e@123";
 
-        Exception exception1 = Assertions.assertThrows(CustomValidationException.class,
-                () -> validation.validateCardholderEmailFormat(email1));
-        Exception exception2 = Assertions.assertThrows(CustomValidationException.class,
-                () -> validation.validateCardholderEmailFormat(email2));
-        Exception exception3 = Assertions.assertThrows(CustomValidationException.class,
-                () -> validation.validateCardholderEmailFormat(email3));
+        Map<String, String> errors1 = new HashMap<>();
+        Map<String, String> errors2 = new HashMap<>();
+        Map<String, String> errors3 = new HashMap<>();
 
-        Assertions.assertEquals("Invalid cardholder email format", exception1.getMessage());
-        Assertions.assertEquals("Invalid cardholder email format", exception2.getMessage());
-        Assertions.assertEquals("Invalid cardholder email format", exception3.getMessage());
+        errors1 = validation.validateCardholderEmail(email1, errors1);
+        errors2 = validation.validateCardholderEmail(email2, errors2);
+        errors3 = validation.validateCardholderEmail(email3, errors3);
+
+        boolean containsKey1 = errors1.containsKey(ERROR_KEY_EMAIL);
+        String errorValue1 = errors1.get(ERROR_KEY_EMAIL);
+        boolean containsKey2 = errors2.containsKey(ERROR_KEY_EMAIL);
+        String errorValue2 = errors2.get(ERROR_KEY_EMAIL);
+        boolean containsKey3 = errors3.containsKey(ERROR_KEY_EMAIL);
+        String errorValue3 = errors3.get(ERROR_KEY_EMAIL);
+
+        Assertions.assertTrue(containsKey1);
+        Assertions.assertEquals("Invalid cardholder email format", errorValue1);
+        Assertions.assertTrue(containsKey2);
+        Assertions.assertEquals("Invalid cardholder email format", errorValue2);
+        Assertions.assertTrue(containsKey3);
+        Assertions.assertEquals("Invalid cardholder email format", errorValue3);
+    }
+
+
+    @Test
+    public void validCardholderEmailValidationTest(){
+        String email = "email@domain.com";
+
+        Map<String, String> errors = new HashMap<>();
+
+        errors = validation.validateCardholderEmail(email, errors);
+
+        boolean containsKey = errors.containsKey(ERROR_KEY_EMAIL);
+        String errorValue = errors.get(ERROR_KEY_EMAIL);
+
+        Assertions.assertFalse(containsKey);
+        Assertions.assertNull(errorValue);
     }
 
     @Test
-    public void validateCorrectCardPanTest(){
-        String pan = "5277029120773860";
-
-        Assertions.assertDoesNotThrow(() -> validation.validateCardPan(pan));
-    }
-
-    @Test
-    public void validateEmptyCardPanThrowsExceptionTest(){
+    public void emptyCardPanValidationPutsError(){
         String pan = "";
 
-        Exception exception = Assertions.assertThrows(CustomValidationException.class,
-                () -> validation.validateCardPanNotEmpty(pan));
+        Map<String, String> errors = new HashMap<>();
 
-        Assertions.assertEquals("Pan is required", exception.getMessage());
+        errors = validation.validateCardPan(pan, errors);
+
+        boolean containsKey = errors.containsKey(ERROR_KEY_PAN);
+        String errorValue = errors.get(ERROR_KEY_PAN);
+
+        Assertions.assertTrue(containsKey);
+        Assertions.assertEquals("Pan is required", errorValue);
     }
 
     @Test
-    public void validateIncorrectFormatCardPanThrowsExceptionTest(){
-        String pan1 = "1234567";
+    public void invalidCardPanFormatValidationPutsError(){
+        String pan1 = "asdasdlksldmflsdf";
+        String pan2 = "1123";
 
-        String pan2 = "asdasfregeewr";
+        Map<String, String> errors1 = new HashMap<>();
+        Map<String, String> errors2 = new HashMap<>();
 
+        errors1 = validation.validateCardPan(pan1, errors1);
+        errors2 = validation.validateCardPan(pan2, errors2);
 
-        Exception exception1 = Assertions.assertThrows(CustomValidationException.class,
-                () -> validation.validateCardPanFormat(pan1));
-        Exception exception2 = Assertions.assertThrows(CustomValidationException.class,
-                () -> validation.validateCardPanFormat(pan2));
+        boolean containsKey1 = errors1.containsKey(ERROR_KEY_PAN);
+        boolean containsKey2 = errors2.containsKey(ERROR_KEY_PAN);
+        String errorValue1 = errors1.get(ERROR_KEY_PAN);
+        String errorValue2 = errors2.get(ERROR_KEY_PAN);
 
-        Assertions.assertEquals("Invalid card pan format", exception1.getMessage());
-        Assertions.assertEquals("Invalid card pan format", exception2.getMessage());
+        Assertions.assertTrue(containsKey1);
+        Assertions.assertTrue(containsKey2);
+        Assertions.assertEquals("Invalid card pan format", errorValue1);
+        Assertions.assertEquals("Invalid card pan format", errorValue2);
     }
 
     @Test
-    public void validateIncorrectCardPanThrowsExceptionTest(){
-        String pan = "4700000000000001";
+    public void invalidCardPanLuhnCheckPutsError(){
+        String pan = "0000000000000000";
 
-        Exception exception = Assertions.assertThrows(CustomValidationException.class,
-                () -> validation.luhnCheck(pan));
+        Map<String, String> errors = new HashMap<>();
 
-        Assertions.assertEquals("Invalid pan number", exception.getMessage());
+        errors = validation.luhnCheck(pan, errors);
 
+        boolean containsKey = errors.containsKey(ERROR_KEY_PAN);
+        String errorValue = errors.get(ERROR_KEY_PAN);
+
+        Assertions.assertTrue(containsKey);
+        Assertions.assertEquals("Invalid pan number", errorValue);
     }
 
     @Test
-    public void validateCorrectExpiryDate(){
-        String expiry = "1224";
+    public void validPanValidationTest(){
+        String pan = "5277029120773860";
 
-        Assertions.assertDoesNotThrow(() -> validation.validateCardExpiry(expiry));
+        Map<String, String> errors = new HashMap<>();
+        errors = validation.luhnCheck(pan, errors);
+
+        boolean containsKey = errors.containsKey(ERROR_KEY_PAN);
+        String errorValue = errors.get(ERROR_KEY_PAN);
+
+        Assertions.assertFalse(containsKey);
+        Assertions.assertNull(errorValue);
     }
 
     @Test
-    public void checkEmptyExpiredDateThrowsException(){
+    public void emptyExpiryValidationPutsError(){
         String expiry = "";
 
-        Exception exception = Assertions.assertThrows(CustomValidationException.class,
-                () -> validation.validateCardExpiryNotEmpty(expiry));
+        Map<String, String> errors = new HashMap<>();
 
-        Assertions.assertEquals("Expiry is required", exception.getMessage());
+        errors = validation.validateCardExpiryNotEmpty(expiry, errors);
+
+        boolean containsKey = errors.containsKey(ERROR_KEY_EXPIRY);
+        String errorValue = errors.get(ERROR_KEY_EXPIRY);
+
+        Assertions.assertTrue(containsKey);
+        Assertions.assertEquals("Expiry is required", errorValue);
     }
 
     @Test
-    public void checkFormatExpiredDateThrowsException(){
-        String expiry1 = "asd";
-        String expiry2 = "1";
+    public void invalidExpiryFormatValidationPutsError(){
+        String expiry1 = "qwer";
+        String expiry2 = "125";
 
-        Exception exception1 = Assertions.assertThrows(CustomValidationException.class,
-                () -> validation.validateCardExpiryFormat(expiry1));
-        Exception exception2 = Assertions.assertThrows(CustomValidationException.class,
-                () -> validation.validateCardExpiryFormat(expiry2));
+        Map<String, String> errors1 = new HashMap<>();
+        Map<String, String> errors2 = new HashMap<>();
 
+        errors1 = validation.validateCardExpiryFormat(expiry1, errors1);
+        errors2 = validation.validateCardExpiryFormat(expiry2, errors2);
 
-        Assertions.assertEquals("Invalid card expiry format", exception1.getMessage());
-        Assertions.assertEquals("Invalid card expiry format", exception2.getMessage());
-    }
+        boolean containsKey1 = errors1.containsKey(ERROR_KEY_EXPIRY);
+        boolean containsKey2 = errors2.containsKey(ERROR_KEY_EXPIRY);
+        String errorValue1 = errors1.get(ERROR_KEY_EXPIRY);
+        String errorValue2 = errors2.get(ERROR_KEY_EXPIRY);
 
-
-    @Test
-    public void checkExpiredDateThrowsException(){
-        String expiry = "1219";
-
-        Exception exception = Assertions.assertThrows(CustomValidationException.class,
-                () -> validation.checkExpiryOverdue(expiry));
-
-        Assertions.assertEquals("Card is expired", exception.getMessage());
+        Assertions.assertTrue(containsKey1);
+        Assertions.assertTrue(containsKey2);
+        Assertions.assertEquals("Invalid card expiry format", errorValue1);
+        Assertions.assertEquals("Invalid card expiry format", errorValue2);
     }
 
     @Test
-    public void checkValidExpiryDate(){
-        Card card = Card.builder()
-                .pan("3543693387314139")
-                .expiry("1224")
-                .cvv("222")
-                .build();
-        String expiry = card.getExpiry();
+    public void expiredExpiryValidationPutsError(){
+        String expiry = "1221";
 
-        Assertions.assertDoesNotThrow(() -> validation.checkExpiryOverdue(expiry));
+        Map<String, String> errors = new HashMap<>();
 
+        errors = validation.checkExpiryOverdue(expiry, errors);
+
+        boolean containsKey = errors.containsKey(ERROR_KEY_EXPIRY);
+        String errorValue = errors.get(ERROR_KEY_EXPIRY);
+
+        Assertions.assertTrue(containsKey);
+        Assertions.assertEquals("Card is expired", errorValue);
     }
 
+    @Test
+    public void validExpiryValidationTest(){
+        String expiry = "1225";
 
+        Map<String, String> errors = new HashMap<>();
+
+        errors = validation.validateCardExpiry(expiry, errors);
+
+        boolean containsKey = errors.containsKey(ERROR_KEY_EXPIRY);
+        String errorValue = errors.get(ERROR_KEY_EXPIRY);
+
+        Assertions.assertFalse(containsKey);
+        Assertions.assertNull(errorValue);
+    }
+
+    @Test
+    public void emptyCvvValidationPutsError(){
+        String cvv = "";
+
+        Map<String, String> errors = new HashMap<>();
+
+        errors = validation.validateCardCvv(cvv, errors);
+
+        boolean containsKey = errors.containsKey(ERROR_KEY_CVV);
+        String errorValue = errors.get(ERROR_KEY_CVV);
+
+        Assertions.assertTrue(containsKey);
+        Assertions.assertEquals("CVV is required",errorValue);
+    }
+
+    @Test
+    public void invalidCvvFormatValidationPutsError(){
+        String cvv = "2a";
+
+        Map<String, String> errors = new HashMap<>();
+
+        errors = validation.validateCardCvv(cvv, errors);
+
+        boolean containsKey = errors.containsKey(ERROR_KEY_CVV);
+        String errorValue = errors.get(ERROR_KEY_CVV);
+
+        Assertions.assertTrue(containsKey);
+        Assertions.assertEquals("Invalid card cvv format",errorValue);
+    }
 
 }
